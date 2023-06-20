@@ -1,14 +1,15 @@
 # wrapper
 import ctypes
-import logging
 import os
 import sys
 
 import numpy as np
 from numpy.ctypeslib import ndpointer
+from py_common.loggers.global_logger import GlobalLoggers
+import logging
+logger = GlobalLoggers.instance().get_logger(__name__)
+logger.setLevel(logging.DEBUG)
 
-logger = logging.getLogger(__name__)
-logger.setLevel(level=logging.INFO)
 
 __LIB_NAME__: str = 'canon'
 __FUNC_NAME__: str = 'canonical'

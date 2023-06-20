@@ -13,7 +13,7 @@ import imageio
 from torch.utils.data import Dataset as TorchDataset
 # from torchvision.datasets.folder import make_dataset
 from typing import Sequence, Callable, List, Dict, Union, Iterable, Tuple
-from pycodelib import common
+from py_common import validate
 from openslide import OpenSlide
 from collections import OrderedDict
 import platform
@@ -252,9 +252,9 @@ class AbstractDataset(TorchDataset):
     @staticmethod
     def slice2array(index: slice, length: int):
         start, stop, step = index.start, index.stop, index.step
-        step = common.default_not_none(step, 1)
-        start = common.default_not_none(start, 0)
-        stop = common.default_not_none(stop, length)
+        step = validate.default_not_none(step, 1)
+        start = validate.default_not_none(start, 0)
+        stop = validate.default_not_none(stop, length)
         assert step != 0, 'step is 0'
         return np.arange(start, stop, step)
 
