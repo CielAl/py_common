@@ -1,4 +1,7 @@
 from setuptools import setup
+from pkg_resources import parse_requirements
+with open('requirements.txt') as root:
+    requirements = [str(req) for req in parse_requirements(root)]
 
 setup(
     name='py_common',
@@ -8,5 +11,6 @@ setup(
     license='',
     author='CielAl',
     author_email='',
-    description=''
+    description='',
+    install_requires=requirements,
 )
