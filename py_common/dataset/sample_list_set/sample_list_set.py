@@ -1,10 +1,10 @@
 from ..base import AbstractDataset
 from ..data_class import ModelInput
 from typing import List, Generic, TypeVar, Callable
-TYPE_SAMPLE = TypeVar['T']
+TYPE_SAMPLE = TypeVar('TYPE_SAMPLE')
 
 
-class SampleListSet(Generic[TYPE_SAMPLE], AbstractDataset):
+class SampleListSet(AbstractDataset, Generic[TYPE_SAMPLE]):
     _sample_list: List[TYPE_SAMPLE]
     _parse_func: Callable[[TYPE_SAMPLE], ModelInput]
 

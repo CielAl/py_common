@@ -2,7 +2,7 @@ from .global_logger import GlobalLoggers
 dbg_logger = GlobalLoggers.instance().get_logger(__name__)
 try:
     import torchnet
-except ModuleNotFoundError:
+except ImportError:
     dbg_logger.critical(f"torchnet is not installed.")
 else:
     from datetime import datetime

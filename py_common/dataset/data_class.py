@@ -1,11 +1,12 @@
-from typing import TypedDict, Any, Union
+from typing import TypedDict, Union,  Any
 import torch
 import numpy as np
+from PIL.Image import Image
 
 
 class ModelInput(TypedDict):
-    data: Any
-    original: Any
+    data: Union[float, int, np.ndarray, torch.Tensor, Image]
+    original: Union[float, int, np.ndarray, torch.Tensor, Image]
     filename: str
     meta: Any
     ground_truth: Union[int, np.ndarray, torch.Tensor]
