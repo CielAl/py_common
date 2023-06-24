@@ -5,10 +5,9 @@ from .sample_list_set import SampleListSet
 from ..data_class import ModelInput
 from typing import Tuple, Union, List, Dict
 import torch
-from torch.utils.data import get_worker_info, DataLoader
+from torch.utils.data import DataLoader
 import numpy as np
 from py_common.import_openslide import openslide
-from functools import partial
 from py_common.loggers.global_logger import GlobalLoggers
 
 logger = GlobalLoggers.instance().get_logger(__name__)
@@ -18,7 +17,7 @@ logger = GlobalLoggers.instance().get_logger(__name__)
 TYPE_WSI_BBOX = Tuple[int, int, int, int]
 TYPE_LABEL = Union[int, torch.Tensor, np.ndarray]
 
-# openslide does not have public fname attribute (protected only)
+# openslide does not have public filename attribute (protected only)
 TYPE_OSH_COMPOUND = Tuple[str, openslide.OpenSlide]
 TYPE_WSI_SAMPLE_STR = Tuple[str, TYPE_WSI_BBOX, TYPE_LABEL]
 TYPE_SAMPLE_OSH = Tuple[TYPE_OSH_COMPOUND, TYPE_WSI_BBOX, TYPE_LABEL]
