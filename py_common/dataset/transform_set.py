@@ -14,6 +14,9 @@ class TransformSet(AbstractDataset):
     def __len__(self):
         return len(self._dataset)
 
+    def new_cache(self):
+        return self.new_cache()
+
     def __init__(self, dataset: AbstractDataset, transforms: Callable,
                  keep_original: bool = False,
                  copy_flag: bool = False):
@@ -36,3 +39,8 @@ class TransformSet(AbstractDataset):
             data['data'] = self._transforms(data['data'])
         return data
 
+    @classmethod
+    def build(cls, dataset: AbstractDataset, transforms: Callable,
+              keep_original: bool = False,
+              copy_flag: bool = False):
+        return cls(dataset=dataset, transforms=transforms, keep_original=keep_original, copy_flag=copy_flag)

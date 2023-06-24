@@ -49,8 +49,9 @@ class GlobalLoggers:
         logger.setLevel(level)
         return logger
 
-    def get_logger(self, name: str) -> logging.Logger:
+    def get_logger(self, name: str, level=DEFAULT_LEVEL) -> logging.Logger:
         if name not in self.logger_dict:
-            logger = GlobalLoggers._new_logger(name)
+            logger = GlobalLoggers._new_logger(name, level)
             self.logger_dict[name] = logger
+        self.logger_dict[name].setLevel(level)
         return self.logger_dict[name]
