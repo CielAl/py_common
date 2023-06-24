@@ -27,6 +27,9 @@ class SlideBBoxSet(SampleListSet[TYPE_WSI_SAMPLE_STR]):
     # default 0
     __level: int
 
+    def new_cache(self):
+        return NotImplemented
+
     @staticmethod
     def size_verify_helper(sample: TYPE_WSI_SAMPLE_STR, new_size: int):
         assert isinstance(new_size, int)
