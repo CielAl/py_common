@@ -18,6 +18,70 @@ class Cached(Protocol):
         """
         pass
 
+
+class CacheManager:
+    __all_cache: Dict[int, Dict]
+
+    @staticmethod
+    def validated_key_ref(key):
+        assert isinstance(key, Cached)
+        ref_idx = id(key)
+        return ref_idx
+
+    def __contains__(self, other):
+        other_id = id(other)
+        return other_id in self.__all_cache
+
+    def __init__(self):
+        self.__all_cache = dict()
+
+    def __setitem__(self, key: Cached, value):
+        ref_idx = CacheManager.validated_key_ref(key)
+        self.__all_cache[ref_idx] = value
+
+    def get(self, key: Cached, default=None):
+        ref_idx = CacheManager.validated_key_ref(key)
+        return self.__all_cache.get(ref_idx, default)
+
+    def __getitem__(self, key: Cached):
+        ref_idx = CacheManager.validated_key_ref(key)
+        return self.__all_cache[ref_idx]
+
+    def clear(self, key: Cached):
+        ref_idx = CacheManager.validated_key_ref(key)
+        self.__all_cache.pop(ref_idx, None)
+
+
+CACHE_MANAGER = CacheManager()
+
+
+class CachedDataset(Dataset, Cached):
+
+    def __del__(self):
+        global CACHE_MANAGER
+        CACHE_MANAGER.clear(self)
+
+    @abstractmethod
+    def new_cache(self) -> Dict:
+        """
+        Override to create the cache object in subclasses if necessary.
+
+        Returns:
+            Cache objects (Dict)
+        """
+        return NotImplemented
+
+    def __init_cache_helper(self):
+        global CACHE_MANAGER
+        # new_value = CACHE_MANAGER.get(self, None)
+        # cache = new_value if new_value is not None else self.new_cache()
+        # assert isinstance(cache, Dict)
+        if self not in CACHE_MANAGER:
+            cache = self.new_cache()
+            CACHE_MANAGER[self] = cache
+        assert CACHE_MANAGER[self] is not None and isinstance(CACHE_MANAGER[self], Dict)
+        return CACHE_MANAGER[self]
+
     def init_cache(self):
         """
         Invoke to initialize the _cache field in worker_init_fn or in factory methods depending on whether there
@@ -26,7 +90,8 @@ class Cached(Protocol):
         Returns:
 
         """
-        self._cache = self.new_cache()
+
+        self._cache = self.__init_cache_helper()
 
     def is_cached(self, key: str):
         """
@@ -40,19 +105,6 @@ class Cached(Protocol):
         """
         return hasattr(self, Cached.CACHE_NAME) and isinstance(self._cache, Dict)\
             and key in self._cache
-
-
-class CachedDataset(Dataset, Cached):
-
-    @abstractmethod
-    def new_cache(self) -> Dict:
-        """
-        Override to create the cache object in subclasses if necessary.
-
-        Returns:
-            Cache objects (Dict)
-        """
-        return NotImplemented
 
     # noinspection PyUnusedLocal
     @staticmethod
@@ -69,6 +121,7 @@ class CachedDataset(Dataset, Cached):
         worker_info = get_worker_info()
         dataset = worker_info.dataset
         dataset.init_cache()
+
         # dataset._cache = cache
 
     @classmethod
