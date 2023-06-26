@@ -1,10 +1,11 @@
 from .data_class import ModelInput
 from typing import Callable, Union
 from .base import AbstractDataset
+from .cached import CachedDataset
 from copy import deepcopy
 
 
-class TransformSet(AbstractDataset):
+class TransformSet(AbstractDataset, CachedDataset):
     """
     Wrapper dataset to add on-the-fly augmentation.
     """

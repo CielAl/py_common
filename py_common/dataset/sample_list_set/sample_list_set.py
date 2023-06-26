@@ -3,6 +3,7 @@ Generic dataset class that read from a list of samples - each sample correspondi
 data point, e.g., URIs and labels.
 """
 from ..base import AbstractDataset
+from ..cached import CachedDataset
 from ..data_class import ModelInput
 from typing import List, Generic, TypeVar, Callable
 from abc import abstractmethod
@@ -11,7 +12,7 @@ from abc import abstractmethod
 TYPE_SAMPLE = TypeVar('TYPE_SAMPLE')
 
 
-class SampleListSet(AbstractDataset, Generic[TYPE_SAMPLE]):
+class SampleListSet(AbstractDataset, CachedDataset, Generic[TYPE_SAMPLE]):
     """
     Override the parse_func to parse the sample and return the data.
     """
