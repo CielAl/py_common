@@ -1,7 +1,14 @@
-from typing import List, Dict, Union, Type, Literal, get_args
+from typing import List, Dict, Union, Type, Literal, get_args, Tuple
+from shapely.strtree import STRtree
+from lazy_property import LazyProperty
+from shapely.geometry import box as shapely_box
+from shapely.strtree import STRtree
+
 from .annotation.base import Annotation, Region
 from .annotation.imagescope import ImageScopeAnnotation
 from .annotation.geojson import GEOJsonAnnotation
+
+TYPE_BBOX = Tuple[int, int, int, int]
 
 TYPE_GEO = Literal["geojson"]
 TYPE_IMAGESCOPE = Literal["imagescope"]
@@ -13,14 +20,21 @@ PARSER_BUILDER_MAP: Dict[str, Type[Annotation]] = {
 }
 
 
-class AnnotationParser:
+class AnnotCollection:
     _annotation_list: List[Annotation]
 
+    @LazyProperty
     def all_regions(self) -> List[Region]:
         region_list = []
         for annotation in self._annotation_list:
             region_list += annotation.regions
         return region_list
+
+    @LazyProperty
+    def str_tree(self) -> STRtree:
+        regions: List[Region] = self.all_regions
+        polygons = [r['polygon'] for r in regions]
+        return STRtree(polygons)
 
     def __init__(self, annotation_list: List[Annotation]):
         self._annotation_list = annotation_list
