@@ -1,7 +1,9 @@
 from abc import abstractmethod
 from typing import runtime_checkable, Protocol, Dict
-
 from torch.utils.data import Dataset, get_worker_info, DataLoader
+from py_common.loggers.global_logger import GlobalLoggers
+import logging
+logger = GlobalLoggers.instance().get_logger(__name__, logging.DEBUG)
 
 
 @runtime_checkable
@@ -19,9 +21,8 @@ class Cached(Protocol):
         pass
 
 
-class CacheManager:
-    __all_cache: Dict[int, Dict]
-
+class CacheManager(dict):
+    # not working
     @staticmethod
     def validated_key_ref(key):
         assert isinstance(key, Cached)
@@ -30,26 +31,26 @@ class CacheManager:
 
     def __contains__(self, other):
         other_id = id(other)
-        return other_id in self.__all_cache
-
-    def __init__(self):
-        self.__all_cache = dict()
+        return super().__contains__(other_id)
 
     def __setitem__(self, key: Cached, value):
         ref_idx = CacheManager.validated_key_ref(key)
-        self.__all_cache[ref_idx] = value
+        super().__setitem__(ref_idx, value)
 
     def get(self, key: Cached, default=None):
         ref_idx = CacheManager.validated_key_ref(key)
-        return self.__all_cache.get(ref_idx, default)
+        return super().get(ref_idx, default)
 
     def __getitem__(self, key: Cached):
         ref_idx = CacheManager.validated_key_ref(key)
-        return self.__all_cache[ref_idx]
+        return super().__getitem__(ref_idx)
 
-    def clear(self, key: Cached):
+    def clear_cache(self, key: Cached):
         ref_idx = CacheManager.validated_key_ref(key)
-        self.__all_cache.pop(ref_idx, None)
+        super().pop(ref_idx, None)
+
+    def __init__(self):
+        super().__init__()
 
 
 CACHE_MANAGER = CacheManager()
@@ -59,7 +60,7 @@ class CachedDataset(Dataset, Cached):
 
     def __del__(self):
         global CACHE_MANAGER
-        CACHE_MANAGER.clear(self)
+        CACHE_MANAGER.clear_cache(self)
 
     @abstractmethod
     def new_cache(self) -> Dict:
@@ -79,6 +80,9 @@ class CachedDataset(Dataset, Cached):
         if self not in CACHE_MANAGER:
             cache = self.new_cache()
             CACHE_MANAGER[self] = cache
+        else:
+            logger.debug(f"Cache Hit")
+
         assert CACHE_MANAGER[self] is not None and isinstance(CACHE_MANAGER[self], Dict)
         return CACHE_MANAGER[self]
 
