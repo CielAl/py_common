@@ -28,4 +28,5 @@ class AnnotationParser:
     @classmethod
     def build(cls, parser_type: TYPE_SUPPORTED_PARSER, uri: str, label_map: Dict[Union[str, int], int]):
         construct = PARSER_BUILDER_MAP[parser_type]
-        return construct.build_from_uri(uri=uri, label_map=label_map)
+        annotation_list = construct.build_from_uri(uri=uri, label_map=label_map)
+        return cls(annotation_list)

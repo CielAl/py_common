@@ -35,6 +35,8 @@ class GEOJsonAnnotation(Annotation[Dict]):
         for points in inner_source:
             points: List[TYPE_POINT]
             inner_list.append(GEOJsonAnnotation._point_set_single(points))
+        # if len(inner_list) == 0:
+        #     inner_list = None
         holed: TYPE_HOLED_SET = outer, inner_list
         return [holed]
 

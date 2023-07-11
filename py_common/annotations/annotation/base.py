@@ -3,14 +3,14 @@ from typing import Generic, TypeVar, Dict, Union, List, Tuple, TypedDict
 from lazy_property import LazyProperty
 from shapely.geometry import Polygon
 
-T = TypeVar['T']
+T = TypeVar("T")
 TYPE_POINT = Tuple[int, int]
 TYPE_POINT_SET = List[TYPE_POINT]
 TYPE_HOLED_SET = Tuple[TYPE_POINT_SET, Union[List[TYPE_POINT_SET], None]]
 # TYPE_HOLED_SET_COLLECTION = List[TYPE_HOLED_SET]
 
-TYPE_LABEL = int
-TYPE_RAW_LABEL = Union[str, TYPE_LABEL]
+TYPE_LABEL = Union[int, None]
+TYPE_RAW_LABEL = Union[str, None, TYPE_LABEL]
 
 
 class Region(TypedDict):
@@ -27,7 +27,7 @@ class Annotation(ABC, Generic[T]):
      One label is assigned to one annotation.
     """
 
-    _label_map: Dict[TYPE_RAW_LABEL, TYPE_LABEL]
+    _label_map: Union[Dict[TYPE_RAW_LABEL, TYPE_LABEL], None]
     _ann_data: T
     _uri: str
 
@@ -47,7 +47,7 @@ class Annotation(ABC, Generic[T]):
     @staticmethod
     def valid_polygon(point_set: TYPE_HOLED_SET):
         outer, inner = point_set
-        polygon = Polygon(point_set, holes=inner)
+        polygon = Polygon(outer, holes=inner)
         if not polygon.is_valid:
             return polygon.buffer(0)
         return polygon
@@ -62,7 +62,7 @@ class Annotation(ABC, Generic[T]):
         # if shell has less than 3 --> discard directly
         if not Annotation._enough_points(outer):
             return None
-        inner = [hole for hole in inner if Annotation._enough_points(hole)]
+        inner = [hole for hole in inner if Annotation._enough_points(hole)] if inner is not None else None
         return outer, inner
 
     @staticmethod
@@ -90,9 +90,9 @@ class Annotation(ABC, Generic[T]):
         return region_list
 
     @staticmethod
-    def _mapped_label(label_map: Dict[TYPE_RAW_LABEL, TYPE_LABEL], label_var: TYPE_RAW_LABEL) -> TYPE_LABEL:
+    def _mapped_label(label_map: Dict[TYPE_RAW_LABEL, TYPE_LABEL],
+                      label_var: TYPE_RAW_LABEL) -> Union[TYPE_RAW_LABEL, TYPE_LABEL]:
         if label_map is None or len(label_map) == 0:
-            assert isinstance(label_var, TYPE_LABEL)
             return label_var
         assert label_var in label_map
         return label_map[label_var]
@@ -103,7 +103,7 @@ class Annotation(ABC, Generic[T]):
 
     @LazyProperty
     def label(self):
-        raw_label = self.raw_label()
+        raw_label = self.raw_label
         label = Annotation._mapped_label(self._label_map, raw_label)
         return label
 
@@ -126,6 +126,6 @@ class Annotation(ABC, Generic[T]):
         return NotImplemented
 
     @classmethod
-    def build_from_uri(cls, uri: str, label_map: Dict[Union[str, int], int]) -> List["Annotation"]:
+    def build_from_uri(cls, uri: str, label_map: Union[Dict[TYPE_RAW_LABEL, TYPE_LABEL], None]) -> List["Annotation"]:
         ann_data_list: List[T] = cls.annotation_list_from_uri(uri)
         return [cls.build(uri=uri, ann_data=ann_data, label_map=label_map) for ann_data in ann_data_list]
