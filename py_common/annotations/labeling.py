@@ -45,7 +45,7 @@ class Labeler:
 
     @property
     def tiles(self):
-        return self.tiles
+        return self._tiles
 
     @property
     def annot_collection(self):
@@ -60,7 +60,7 @@ class Labeler:
 
     def __init__(self, bbox_list: List[TYPE_BBOX], annot_collection: AnnotCollection):
         self._bbox_list = [Labeler._bbox_sanitized(bbox) for bbox in bbox_list]
-        self._tiles = [Labeler.valid_box(*bbox) for bbox in bbox_list]
+        self._tiles = [Labeler.valid_box(bbox) for bbox in bbox_list]
         self._annot_collection = annot_collection
         self._tile_tree = STRtree(self._tiles)
         self.__query_cache = dict()
@@ -133,7 +133,9 @@ class Labeler:
             Labeler._dict_value_accumulate(index_threshed, key=label, value=index_threshed_label, operand='concat')
             all_index_in_annotation += in_region_label
         # index_threshed[Labeler.BG_LABEL] = index_threshed.get(Labeler.BG_LABEL, [])
-        index_threshed[Labeler.BG_LABEL] += all_index_in_annotation
+        # index_threshed[Labeler.BG_LABEL] += all_index_in_annotation
+        # Labeler._dict_value_accumulate(index_threshed, key=Labeler.BG_LABEL,
+        #                                value=all_index_in_annotation, operand='concat')
         return index_threshed
 
     def query_tiles(self, threshold: float = None,
@@ -159,7 +161,19 @@ class Labeler:
                 return {index: label_list[:1] for index, label_list in index_to_label.items() if len(label_list) > 0}
 
     def get_tile_labels(self, unique_flag: UNIQUE_FLAG, threshold: float = None,
-                        predicate='overlaps', distance=None) -> List[Tuple[TYPE_BBOX, TYPE_RAW_LABEL]]:
+                        predicate='intersects', distance=None) -> List[Tuple[TYPE_BBOX, TYPE_RAW_LABEL]]:
+
+        """Query the label of tiles
+
+        Args:
+            unique_flag:
+            threshold: No effect - leave for future adaptation.
+            predicate:
+            distance:
+
+        Returns:
+
+        """
 
         assert unique_flag in _unique_set
 
@@ -169,7 +183,6 @@ class Labeler:
             for index in index_list:
                 # index_to_label[index]
                 Labeler._dict_value_accumulate(index_to_label, key=index, value=label, operand='append')
-
         index_to_label = Labeler.unique_index_helper(index_to_label, unique_flag)
         out_list: List[Tuple[TYPE_BBOX, TYPE_RAW_LABEL]] = []
         for index, label_list in index_to_label.items():

@@ -1,6 +1,6 @@
 import h5py
 import numpy as np
-from typing import Sequence, Union, Dict, Tuple
+from typing import Sequence, Union, Tuple, List
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,34 @@ def to_numpy(input_data: Union[Sequence, np.ndarray]) -> np.ndarray:
 
 
 class H5Util:
+
+    @staticmethod
+    def add_str_dataset_helper(h5root: h5py.File, name: str, str_data_in: str):
+        """
+        Helper function to add single string-based entry.
+        Args:
+            h5root: Root of the hdf5 file.
+            name: Name of the dataset.
+            str_data_in: A single string
+        Returns:
+            None
+        """
+        str_data = str(str_data_in)  # to_numpy(str_data_in).astype(object)
+        dtype_str = h5py.string_dtype(encoding='utf-8', length=None)  # h5py.special_dtype(vlen=str)
+        h5root.create_dataset(name=name, data=str_data, shape=(1, ), dtype=dtype_str)
+
+    def add_str_dataset(self, name: str, str_data_in: str):  # Union[Sequence, np.ndarray]
+        """
+        Fluent interface to add string dataset - for compatibility only - merge into array dataset
+        Args:
+            name: Name of the dataset to add
+            str_data_in: A list or np.array of strings to add.
+
+        Returns:
+
+        """
+        H5Util.add_str_dataset_helper(self.h5root, name, str_data_in)
+        return self
 
     @staticmethod
     def add_array_dataset_helper(h5root: h5py.File, name: str, shape: Tuple, max_size: int = None,
@@ -43,22 +71,6 @@ class H5Util:
         chunks = (chunk_size,) + shape
         h5root.create_dataset(name=name, shape=shape_all, maxshape=max_shape, chunks=chunks, dtype=dtype)
 
-    @staticmethod
-    def add_str_dataset_helper(h5root: h5py.File, name: str, str_data_in: Union[Sequence, np.ndarray]):
-        """
-        Helper function to add string-based dataset.
-        Args:
-            h5root: Root of the hdf5 file.
-            name: Name of the dataset.
-            str_data_in: A list of string or string np.ndarrays.
-
-        Returns:
-            None
-        """
-        str_data = to_numpy(str_data_in).astype(object)
-        dtype_str = h5py.special_dtype(vlen=str)
-        h5root.create_dataset(name=name, data=str_data, dtype=dtype_str)
-
     def add_array_dataset(self, name: str, shape: Tuple, max_size: int = None, chunk_size=None, dtype=None) -> "H5Util":
         """
         Fluent interface to add array dataset into the  self.h5root
@@ -74,19 +86,6 @@ class H5Util:
         """
         H5Util.add_array_dataset_helper(self.h5root, name=name, shape=shape, max_size=max_size, chunk_size=chunk_size,
                                         dtype=dtype)
-        return self
-
-    def add_str_dataset(self, name: str, str_data_in: Union[Sequence, np.ndarray]):
-        """
-        Fluent interface to add string dataset.
-        Args:
-            name: Name of the dataset to add
-            str_data_in: A list or np.array of strings to add.
-
-        Returns:
-
-        """
-        H5Util.add_str_dataset_helper(self.h5root, name, str_data_in)
         return self
 
     @staticmethod
@@ -154,7 +153,7 @@ class H5Util:
 
         assert insert_dim == old_dataset_dim, f"Dim mismatch Insert: {insert_dim} vs. Dataset {old_dataset_dim}"
         insert_data_size = data_shape[0]
-        old_size = h5root[dataset_name].shape[0]
+        old_size = len(h5root[dataset_name])
 
         H5Util.validate_insert_idx(old_size=old_size, insert_idx=insert_idx)
         is_in_boundary = H5Util.in_current_boundary(old_size=old_size,
@@ -163,11 +162,24 @@ class H5Util:
         # resize only if data has been appended.
         # the h5py dataset starts with at least one all-zero array
         if is_in_boundary:
+            # usually happens in the beginning
             return
         # might overlap
         # new_size = right_most + 1 = (insert_idx + insert_data_size - 1) + 1
         new_size = insert_idx + insert_data_size
         h5root[dataset_name].resize(new_size, axis=0)
+
+    @staticmethod
+    def _data_shape_helper(data: Union[np.ndarray, str]):
+        if isinstance(data, str):
+            return 1,
+        return data.shape
+
+    @staticmethod
+    def _insert_size_helper(data: np.ndarray | str | List):
+        if isinstance(data, str):
+            return 1
+        return len(data)
 
     def add_data_to_array(self, dataset_name: str, data: np.ndarray, insert_idx: int):
         """
@@ -181,8 +193,9 @@ class H5Util:
         Returns:
 
         """
-        insert_size = data.shape[0]
-        H5Util.update_array_size(self.h5root, dataset_name=dataset_name, data_shape=data.shape, insert_idx=insert_idx)
+        insert_size = H5Util._insert_size_helper(data)
+        shape = H5Util._data_shape_helper(data)
+        H5Util.update_array_size(self.h5root, dataset_name=dataset_name, data_shape=shape, insert_idx=insert_idx)
         self.h5root[dataset_name][-insert_size:] = data
         return self
 

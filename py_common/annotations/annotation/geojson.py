@@ -15,9 +15,9 @@ class GEOJsonAnnotation(Annotation[Dict]):
     NAME: str = "name"
 
     """
-    Note the annotation is corresponding to a single element in the json list.
-    See https://github.com/choosehappy/HistoQC/blob/master/histoqc/AnnotationModule.py
-    
+    Parses a typical GeoJSON file containing one or more Polygon or MultiPolygon features.
+    These JSON files are the preferred way to serialize QuPath annotations, for example.
+    See https://qupath.readthedocs.io/en/latest/docs/scripting/overview.html#serialization-json
     """
 
     @staticmethod
@@ -69,8 +69,14 @@ class GEOJsonAnnotation(Annotation[Dict]):
     def label_from_annotation(self) -> TYPE_RAW_LABEL:
         prop = self.ann_data.get(GEOJsonAnnotation.PROP)
         classification = prop.get(GEOJsonAnnotation.CLASS)
-        return classification.get(GEOJsonAnnotation.NAME)
+        if classification is not None:
+            return classification.get(GEOJsonAnnotation.NAME)
+        return None
 
     @staticmethod
     def annotation_list_from_uri(uri) -> List[Dict]:
-        return load_json(uri)
+        data = load_json(uri)
+        if isinstance(data, Dict):
+            return [data]
+        assert isinstance(data, List)
+        return data

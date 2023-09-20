@@ -95,7 +95,7 @@ class CachedDataset(Dataset, Cached):
 
         """
 
-        self._cache = self.__init_cache_helper()
+        self._cache = self.new_cache()
 
     def is_cached(self, key: str):
         """
@@ -124,6 +124,7 @@ class CachedDataset(Dataset, Cached):
         """
         worker_info = get_worker_info()
         dataset = worker_info.dataset
+        # print(dataset)
         dataset.init_cache()
 
         # dataset._cache = cache

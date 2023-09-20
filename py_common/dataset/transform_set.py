@@ -18,7 +18,7 @@ class TransformSet(AbstractDataset, CachedDataset):
         return len(self._dataset)
 
     def new_cache(self):
-        return self.new_cache()
+        return self._dataset.new_cache()
 
     def __init__(self, dataset: AbstractDataset, transforms: Callable,
                  keep_original: bool = False,

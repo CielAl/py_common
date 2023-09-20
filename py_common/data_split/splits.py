@@ -1,5 +1,5 @@
 import json
-from py_common.io_utils.json import write_json, load_json
+from py_common.io_utils.factory import write_data, load_data, TYPE_SUPPORTED
 import os
 from typing import Protocol, runtime_checkable, Iterable, TypedDict, List, Tuple, Union, Dict
 import numpy as np
@@ -20,13 +20,19 @@ class SplitOut(TypedDict):
 _SET_OUT_KEYS = SplitOut.__annotations__.keys()
 
 
+def parse_split(split_dict: SplitOut, split_idx) -> Tuple[Tuple[List, List], Tuple[List[int], List[int]]]:
+    train_idx, val_idx = split_dict['split_indices'][split_idx]
+    train_samples = [split_dict['file_list'][x] for x in train_idx]
+    val_samples = [split_dict['file_list'][x] for x in val_idx]
+    return (train_samples, val_samples), (train_idx, val_idx)
+
+
+@runtime_checkable
 class Splitter(Protocol):
 
-    @runtime_checkable
     def split(self, X, y, group) -> Iterable:
         pass
 
-    @runtime_checkable
     def get_n_splits(self, X, y, group) -> Iterable:
         pass
 
@@ -49,21 +55,25 @@ class DataSplit:
     TRAIN_IDX: int = 0
     TEST_IDX: int = 1
 
+    DEFAULT_READER: str = 'json'
+
     @property
     def splitter(self):
         return self.__splitter
 
     def __init__(self, splitter: Splitter, export_dir: str, name_prefix: str, cohort_name: str,
-                 name_suffix: str = None):
+                 name_suffix: str = None,
+                 io_method: TYPE_SUPPORTED = DEFAULT_READER):
         self.__splitter = splitter
 
         self._export_dir = export_dir
         self._cohort_name = cohort_name
         self._name_prefix = name_prefix
         self._name_suffix = name_suffix
+        self._io_method = io_method
 
-    def _split_list(self, X, y, group=None):
-        return list(self.splitter.split(X, y, group))
+    def _split_list(self, x, y, group=None):
+        return list(self.splitter.split(x, y, group))
 
     @staticmethod
     def _filename_helper(cohort_name: str, name_suffix: str = None):
@@ -80,23 +90,24 @@ class DataSplit:
         dest_name = os.path.join(save_folder, DataSplit._filename_helper(self._cohort_name, self._name_suffix))
         return dest_name
 
-    def get_split_data(self, X, y, group=None) -> SplitOut:
-        split_data = self._split_list(X, y, group)
-        return SplitOut(file_list=X, label_list=y, group_list=group, split_indices=split_data, cohort=self._cohort_name)
+    def get_split_data(self, x, y, group=None) -> SplitOut:
+        split_data = self._split_list(x, y, group)
+        return SplitOut(file_list=x, label_list=y, group_list=group, split_indices=split_data, cohort=self._cohort_name)
 
     @staticmethod
-    def _write_to_json(fname, split_data: SplitOut):
-        write_json(fname, split_data, indent=4, cls=NumpyEncoder)
+    def _write_to_file(fname, method: TYPE_SUPPORTED, split_data: SplitOut):
+        write_data(fname, method, split_data, indent=4, cls=NumpyEncoder)
 
     def export_split(self, X, y, group, ):
         dest_name = self.get_export_path(create_dir=True)
         split_data = self.get_split_data(X, y, group)
-        DataSplit._write_to_json(dest_name, split_data)
+        DataSplit._write_to_file(dest_name, self._io_method, split_data)
         return split_data
 
     @staticmethod
-    def read_split(filename: str) -> SplitOut:
-        data_dict = load_json(filename)
+    def read_split(filename: str, method: TYPE_SUPPORTED = DEFAULT_READER) -> SplitOut:
+        data_dict = load_data(filename, method)
+
         assert isinstance(data_dict, Dict)
         assert set(data_dict.keys()).issuperset(_SET_OUT_KEYS)
         return data_dict
