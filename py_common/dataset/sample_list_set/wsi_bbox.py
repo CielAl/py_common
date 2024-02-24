@@ -10,6 +10,7 @@ import numpy as np
 from py_common.import_openslide import openslide
 from py_common.loggers.global_logger import GlobalLoggers
 
+
 logger = GlobalLoggers.instance().get_logger(__name__)
 
 

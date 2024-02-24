@@ -21,46 +21,51 @@ class Cached(Protocol):
         pass
 
 
-class CacheManager(dict):
-    # not working
-    @staticmethod
-    def validated_key_ref(key):
-        assert isinstance(key, Cached)
-        ref_idx = id(key)
-        return ref_idx
-
-    def __contains__(self, other):
-        other_id = id(other)
-        return super().__contains__(other_id)
-
-    def __setitem__(self, key: Cached, value):
-        ref_idx = CacheManager.validated_key_ref(key)
-        super().__setitem__(ref_idx, value)
-
-    def get(self, key: Cached, default=None):
-        ref_idx = CacheManager.validated_key_ref(key)
-        return super().get(ref_idx, default)
-
-    def __getitem__(self, key: Cached):
-        ref_idx = CacheManager.validated_key_ref(key)
-        return super().__getitem__(ref_idx)
-
-    def clear_cache(self, key: Cached):
-        ref_idx = CacheManager.validated_key_ref(key)
-        super().pop(ref_idx, None)
-
-    def __init__(self):
-        super().__init__()
-
-
-CACHE_MANAGER = CacheManager()
+# class CacheManager(dict):
+#     # not working
+#     @staticmethod
+#     def validated_key_ref(key):
+#         assert isinstance(key, Cached)
+#         ref_idx = id(key)
+#         return ref_idx
+#
+#     def __contains__(self, other):
+#         other_id = id(other)
+#         return super().__contains__(other_id)
+#
+#     def __setitem__(self, key: Cached, value):
+#         ref_idx = CacheManager.validated_key_ref(key)
+#         super().__setitem__(ref_idx, value)
+#
+#     def get(self, key: Cached, default=None):
+#         ref_idx = CacheManager.validated_key_ref(key)
+#         return super().get(ref_idx, default)
+#
+#     def __getitem__(self, key: Cached):
+#         ref_idx = CacheManager.validated_key_ref(key)
+#         return super().__getitem__(ref_idx)
+#
+#     def clear_cache(self, key: Cached):
+#         ref_idx = CacheManager.validated_key_ref(key)
+#         super().pop(ref_idx, None)
+#
+#     def __init__(self):
+#         super().__init__()
+#
+#
+# CACHE_MANAGER = CacheManager()
 
 
 class CachedDataset(Dataset, Cached):
 
     def __del__(self):
-        global CACHE_MANAGER
-        CACHE_MANAGER.clear_cache(self)
+        # global CACHE_MANAGER
+        # CACHE_MANAGER.clear_cache(self)
+        self.clear_cache()
+
+    def clear_cache(self):
+        if hasattr(self, '_cache') and isinstance(self._cache, Dict):
+            self._cache.clear()
 
     @abstractmethod
     def new_cache(self) -> Dict:
@@ -72,19 +77,19 @@ class CachedDataset(Dataset, Cached):
         """
         return NotImplemented
 
-    def __init_cache_helper(self):
-        global CACHE_MANAGER
-        # new_value = CACHE_MANAGER.get(self, None)
-        # cache = new_value if new_value is not None else self.new_cache()
-        # assert isinstance(cache, Dict)
-        if self not in CACHE_MANAGER:
-            cache = self.new_cache()
-            CACHE_MANAGER[self] = cache
-        else:
-            logger.debug(f"Cache Hit")
-
-        assert CACHE_MANAGER[self] is not None and isinstance(CACHE_MANAGER[self], Dict)
-        return CACHE_MANAGER[self]
+    # def __init_cache_helper(self):
+    #     global CACHE_MANAGER
+    #     # new_value = CACHE_MANAGER.get(self, None)
+    #     # cache = new_value if new_value is not None else self.new_cache()
+    #     # assert isinstance(cache, Dict)
+    #     if self not in CACHE_MANAGER:
+    #         cache = self.new_cache()
+    #         CACHE_MANAGER[self] = cache
+    #     else:
+    #         logger.debug(f"Cache Hit")
+    #
+    #     assert CACHE_MANAGER[self] is not None and isinstance(CACHE_MANAGER[self], Dict)
+    #     return CACHE_MANAGER[self]
 
     def init_cache(self):
         """
@@ -125,6 +130,7 @@ class CachedDataset(Dataset, Cached):
         worker_info = get_worker_info()
         dataset = worker_info.dataset
         # print(dataset)
+        # noinspection PyUnresolvedReferences
         dataset.init_cache()
 
         # dataset._cache = cache

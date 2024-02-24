@@ -9,11 +9,12 @@ from torch.utils.data import Dataset
 from abc import ABC, abstractmethod
 from .data_class import ModelInput
 from typing import Dict, Set
+from .cached import CachedDataset
 
 SET_DATA_KEYS: Set = set(ModelInput.__annotations__.keys())
 
 
-class AbstractDataset(Dataset, ABC):
+class AbstractDataset(CachedDataset, ABC):
 
     DEFAULT_VALUE: int = 0
 
@@ -31,7 +32,7 @@ class AbstractDataset(Dataset, ABC):
         Raises:
             AssertionError
         """
-        assert isinstance(data, Dict)
+        assert isinstance(data, Dict), type(data)
         key_set = set(data.keys())
         assert key_set.issuperset(SET_DATA_KEYS)
         return data

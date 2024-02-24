@@ -10,7 +10,7 @@ class H5Reader:
     """
     __uri: str
     __primary_field: str
-    CACHE_SIZE: int = 1024 * 1024 * 2
+    CACHE_SIZE: int = 1024 * 1024 * 1
     ERROR_FIELD_NOT_CREATED: str = "The dataset is not created:"
 
     @property

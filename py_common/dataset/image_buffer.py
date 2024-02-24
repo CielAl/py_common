@@ -40,7 +40,7 @@ class Buffer(Protocol):
 
         """
         self.manager = mp.Manager()
-        self._tile_buffer = self.manager.dict()
+        self._tile_buffer = dict()
         self._buffer_size = buffer_size
 
     def current_size(self) -> int:

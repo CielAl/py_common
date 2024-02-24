@@ -73,7 +73,7 @@ class Labeler:
             return [x for x in raw_indices]
         # for tile in tile_list:
         #     intersect: Polygon = tile.intersection(region_polygon)
-        return [index for index in raw_indices if tile_list[index].intersection(region_polygon).area > 0]
+        return [index for index in raw_indices if tile_list[index].intersection(region_polygon).area > threshold]
 
     @staticmethod
     def query_tiles_in_region(str_tree: STRtree, region: Region,

@@ -13,6 +13,7 @@ from .image_buffer import BufferedDataset
 from .cached import CachedDataset
 from typing import List, Dict, Sequence, Optional
 import os
+import numpy as np
 
 
 class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
@@ -39,8 +40,10 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
 
     _h5reader: H5Reader
     _uri: str
-    worker_cache: Dict
+    _cache: Dict
     _rdcc_nbytes: Optional[int]
+    _filenames: np.ndarray
+    _raw_labels: np.ndarray
 
     @property
     def h5reader(self):
@@ -70,7 +73,8 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
 
         self._cache = self.new_cache()
 
-    def __init__(self, uri: str, reader: H5Reader, rdcc_nbytes: Optional[int] = None, buffer_ratio: float = 1):
+    def __init__(self, uri: str, reader: H5Reader, rdcc_nbytes: Optional[int] = None, label_map: Dict = None,
+                 buffer_ratio: float = 1):
         """Init the instance.
 
         Args:
@@ -88,32 +92,52 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         # todo - somehow the eviction mechanism of cache prevent loading multiple chunked datasets
         # todo refactor later but for now we force to cache the label and bbox
         # data['label'].item()
-        # with self.h5reader.get_h5root() as root:
-        #     self._label_cache = root[H5ParserCore.CONST_LABEL][:]
-        #     self._bbox_cache = root[H5ParserCore.CONST_BBOX][:]
+        with self.h5reader.get_h5root() as root:
+            self._raw_labels = root[H5ParserCore.CONST_LABEL][:] if H5ParserCore.CONST_LABEL in root else None
+            self._filenames = root[H5ParserCore.CONST_URI].asstr()[:] if H5ParserCore.CONST_URI in root else None
+        self._label_map = label_map
+
+    @property
+    def label_map(self):
+        return self._label_map
+
+    @label_map.setter
+    def label_map(self, x):
+        self._label_map = x
+
+    @property
+    def raw_labels(self):
+        return self._raw_labels
+
+    @property
+    def filenames(self):
+        return self._filenames
 
     @classmethod
     def build(cls, uri: str,
               array_fields: Sequence = (H5ParserCore.CONST_TILE, H5ParserCore.CONST_BBOX, H5ParserCore.CONST_LABEL,
                                         H5ParserCore.CONST_URI),
-              buffer_ratio: float = 1, **kwargs):
+              label_map: Dict = None,
+              buffer_ratio: float = 1,
+              rdcc_nbytes: Optional[int] = None):
         """
         Factory method. Build from file name
 
         Args:
             uri: uri of h5 file
             array_fields: which fields to read from hdf5 data
+            label_map:
             buffer_ratio: ratio (from 0.0 to 1.0) of tiles to be cached in memory.
-
+            rdcc_nbytes: rdcc_nbytes for h5py.File
         Returns:
 
         """
         array_fields_read: List[str] = [H5ParserCore.CONST_TILE, H5ParserCore.CONST_BBOX, H5ParserCore.CONST_LABEL,
-                                        H5ParserCore.CONST_URI]
+                                        H5ParserCore.CONST_URI] if array_fields is None else array_fields
         # , H5ParserCore.CONST_BBOX, H5ParserCore.CONST_LABEL
         primary_field: str = H5ParserCore.CONST_TILE
         reader = H5Reader(uri=uri, array_fields_read=array_fields_read, primary_field=primary_field)
-        return cls(uri=uri, reader=reader, buffer_ratio=buffer_ratio)
+        return cls(uri=uri, reader=reader, label_map=label_map, buffer_ratio=buffer_ratio, rdcc_nbytes=rdcc_nbytes)
 
     def get_item_from_reader(self, index: int):
         """
@@ -128,10 +152,14 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         # no effect here since we do not enforce caching of file handles.
         # but leave it here in case retaining of file handle actually helps and my observation is wrong.
         if self.is_cached(self._uri):
-            return self.h5reader.get_item_helper(self.worker_cache[self._uri], index)
+            return self.h5reader.get_item_helper(self._cache[self._uri], index)
         #
         with self.h5reader.get_h5root() as root:
             return self.h5reader.get_item_helper(root, index)
+
+    @staticmethod
+    def default_field_value(data: Dict, field: str, default_value):
+        return data[field] if field in data else default_value
 
     def fetch(self, index: int) -> ModelInput:
         """Helper function.
@@ -149,18 +177,22 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         if data is None:
             data: Dict = self.get_item_from_reader(index)
         img = data[H5ParserCore.CONST_TILE]
-        label = data[H5ParserCore.CONST_LABEL].item()
+        # label = data[H5ParserCore.CONST_LABEL].item() if H5ParserCore.CONST_LABEL in data else None
+        label = CachedH5Dataset.default_field_value(data, H5ParserCore.CONST_LABEL, None)
+        label = label.item() if label is not None else label
         # label = self._label_cache[index].item()
-        bbox = data[H5ParserCore.CONST_BBOX]
+        bbox = CachedH5Dataset.default_field_value(data, H5ParserCore.CONST_BBOX, None)
         # bbox = self._bbox_cache[index]
         self._add_into_buffer_by_key(index, data)
 
         # todo store actual slide names later
         # filename = self.h5reader.get_h5root()
-        filename = data[H5ParserCore.CONST_URI]
+        filename = CachedH5Dataset.default_field_value(data, H5ParserCore.CONST_URI, None)
         if isinstance(filename, bytes):
             filename = filename.decode('utf-8')
         # todo to update
+        if self._label_map is not None:
+            label = self._label_map[label]
         net_input = ModelInput(data=img, ground_truth=label, original=0, filename=filename, meta=bbox)
         return net_input
 
@@ -170,6 +202,6 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         Returns:
 
         """
-        if hasattr(self, 'worker_cache'):
-            for k, v in self.worker_cache.items():
+        if hasattr(self, '_cache'):
+            for k, v in self._cache.items():
                 v.close()

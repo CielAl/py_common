@@ -1,7 +1,7 @@
 """
 Regulate the form of the dataset
 """
-from typing import TypedDict, Union,  Any, List
+from typing import TypedDict, Union,  Any, List, Dict
 import torch
 import numpy as np
 from PIL.Image import Image
@@ -20,7 +20,7 @@ class ModelInput(TypedDict):
     data: Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
     original: Union[float, int, np.ndarray, torch.Tensor, Image]
     filename: str
-    meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
+    meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY], Dict]
     ground_truth: Union[int, float, np.ndarray, torch.Tensor]
 
 

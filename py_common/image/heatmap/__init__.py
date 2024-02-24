@@ -1,6 +1,5 @@
 import numpy as np
 import skimage
-from py_common.import_openslide import openslide
 import matplotlib
 from skimage.transform import resize
 
@@ -30,6 +29,17 @@ def heatmap_overlay_rgb(img: np.ndarray, heatmap: np.ndarray):
 
 
 def score_grid_2d_helper(grid: np.ndarray, scores: np.ndarray, x_idx: np.ndarray, y_idx: np.ndarray):
+    """backbone. create a 2D grid of scores given the corresponding coordinates
+
+    Args:
+        grid:
+        scores:
+        x_idx:
+        y_idx:
+
+    Returns:
+
+    """
     # noinspection PyArgumentList
     y_max = y_idx.max()
     # noinspection PyArgumentList
@@ -52,23 +62,41 @@ def bg_grid_2d(width: int, height: int, scores: np.ndarray, x_idx: np.ndarray, y
     return bg_grid
 
 
-def wsi_score_grid_helper(osh: openslide.OpenSlide,
+def wsi_score_grid_array(grid_in: np.ndarray,
+                         tile_size: int, scores: np.ndarray, box_x: np.ndarray, box_y: np.ndarray):
+    x_idx = box_x // tile_size
+    y_idx = box_y // tile_size
+    grid_height = grid_in.shape[0]
+    grid_width = grid_in.shape[1]
+    grid_out = score_grid_2d_helper(grid_in, scores, x_idx, y_idx)
+    bg_mask = bg_grid_2d(grid_width, grid_height, scores, x_idx, y_idx)
+    return grid_out, bg_mask, (grid_width * tile_size, grid_height * tile_size)
+
+
+def wsi_score_grid_wh(grid_width, grid_height,
+                      tile_size: int, scores: np.ndarray, box_x: np.ndarray, box_y: np.ndarray):
+    # x_idx = box_x // tile_size
+    # y_idx = box_y // tile_size
+    # grid = score_grid_2d_helper(np.zeros((grid_height, grid_width), dtype=scores.dtype), scores, x_idx, y_idx)
+    # bg_mask = bg_grid_2d(grid_width, grid_height, scores, x_idx, y_idx)
+    # return grid, bg_mask, (grid_width * tile_size, grid_height * tile_size)
+    grid_in = np.zeros((grid_height, grid_width), dtype=scores.dtype)
+    return wsi_score_grid_array(grid_in, tile_size, scores, box_x, box_y)
+
+
+def wsi_score_grid_by_osh(osh,
                           tile_size: int, scores: np.ndarray, box_x: np.ndarray, box_y: np.ndarray,
                           ):
     grid_width, grid_height = tuple(np.asarray(osh.level_dimensions[0]) // tile_size)
-    x_idx = box_x // tile_size
-    y_idx = box_y // tile_size
-    grid = score_grid_2d(grid_width, grid_height, scores, x_idx, y_idx)
-    bg_mask = bg_grid_2d(grid_width, grid_height, scores, x_idx, y_idx)
-    return grid, bg_mask, (grid_width * tile_size, grid_height * tile_size)
+    return wsi_score_grid_wh(grid_width, grid_height, tile_size=tile_size, scores=scores, box_x=box_x, box_y=box_y)
 
 
-def wsi_score_grid(osh: openslide.OpenSlide, downsample_factor: int,
-                   tile_size: int, scores: np.ndarray, box_x: np.ndarray, box_y: np.ndarray,
-                   cm_name: str = 'coolwarm'):
+def wsi_score_grid_wrapper(osh, downsample_factor: int,
+                           tile_size: int, scores: np.ndarray, box_x: np.ndarray, box_y: np.ndarray,
+                           cm_name: str = 'coolwarm'):
     new_size = tuple(np.asarray(osh.level_dimensions[0]) // downsample_factor)
     # bg_mask -- fg=False bg=True
-    grid, bg_mask, wh_no_remainder = wsi_score_grid_helper(osh, tile_size, scores, box_x, box_y)
+    grid, bg_mask, wh_no_remainder = wsi_score_grid_by_osh(osh, tile_size, scores, box_x, box_y)
     thumbnail: np.ndarray = np.array(osh.get_thumbnail(new_size).convert("RGB"), copy=True)
     # cut off the remainder if cannot be divided by tile_size
     cutoff_w, cutoff_h = wh_no_remainder
@@ -76,10 +104,12 @@ def wsi_score_grid(osh: openslide.OpenSlide, downsample_factor: int,
 
     cm = matplotlib.colormaps[cm_name]
     heatmap_colored = cm(grid)[:, :, :3]
+    bg_mask = bg_mask.astype(bool)
     heatmap_colored[bg_mask] = 0
 
-    heatmap_thumb = resize(heatmap_colored, (new_size[1], new_size[0]))
+    heatmap_colored = skimage.util.img_as_ubyte(heatmap_colored)
+    heatmap_thumb = resize(heatmap_colored, (new_size[1], new_size[0]), anti_aliasing=False)
     overlaid = heatmap_overlay_rgb(thumbnail, heatmap_thumb)
     overlaid = skimage.util.img_as_ubyte(overlaid)
-    return thumbnail, overlaid
+    return thumbnail, overlaid, heatmap_colored, grid
 

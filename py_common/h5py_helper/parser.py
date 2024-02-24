@@ -34,7 +34,7 @@ class H5ParserCore:
     CONST_LABEL: str = 'label'
     CONST_URI: str = 'uri'
 
-    CONST_PRESERVED_FIELDS: List[str] = [CONST_DATASET_NAME, CONST_TILE]
+    CONST_PRESERVED_FIELDS: List[str] = []  # CONST_DATASET_NAME, CONST_TILE
     TYPE_STR: str = "str"
     TYPE_ARRAY: str = "array"
     SUPPORTED_ARRAY_TYPES: Set[str] = {TYPE_STR, TYPE_ARRAY}
@@ -477,7 +477,7 @@ class Parser:
         assert len(invalid_fields) == 0, f"{Parser.ERROR_NONEXIST_FIELD_TO_WRITE}: {invalid_fields}"
         for idx, data_points_single in enumerate(generator_work):
             # check cut off
-            if 0 <= cutoff_size <= idx and cutoff_size is not None:
+            if cutoff_size is not None and 0 <= cutoff_size <= idx:
                 break
             # for name, data in zip(field_order, data_points_single):
             #     self.h5util.add_data_to_array(name, data, insert_idx=idx)

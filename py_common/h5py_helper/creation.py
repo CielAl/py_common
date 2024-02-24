@@ -151,7 +151,8 @@ class H5Util:
         insert_dim = len(data_shape)
         old_dataset_dim = len(h5root[dataset_name].shape)
 
-        assert insert_dim == old_dataset_dim, f"Dim mismatch Insert: {insert_dim} vs. Dataset {old_dataset_dim}"
+        assert insert_dim == old_dataset_dim, f"{dataset_name} " \
+                                              f"Dim mismatch Insert: {insert_dim} vs. Dataset {old_dataset_dim}"
         insert_data_size = data_shape[0]
         old_size = len(h5root[dataset_name])
 
