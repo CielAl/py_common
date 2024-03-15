@@ -38,6 +38,12 @@ class SynchronizedRotation90(tvf.RandomRotation):
                 fill = [float(f) for f in fill]
         return fill
 
+    def rotate_single_image(self, img: TYPE_TENSOR_IMG, angle: float):
+        fill = self.fill_helper(img)
+        rotated_image = F.rotate(img, angle, self.interpolation,
+                                 self.expand, self.center, fill)
+        return rotated_image
+
     def forward(self, img: TYPE_TENSOR_IMG | List[TYPE_TENSOR_IMG]):
         """
         Args:
@@ -46,19 +52,21 @@ class SynchronizedRotation90(tvf.RandomRotation):
         Returns:
             PIL Image or Tensor: Rotated image.
         """
+        angle = torch.randint(4, (1, )).item() * 90
 
         if is_simple_tensor_img(img):
-            return super().forward(img)
+            return self.rotate_single_image(img, angle)
 
         assert isinstance(img, List)
-        angle = torch.randint(4, (1, )).item() * 90
+
         out_list = []
         for single_image in img:
-            fill = self.fill_helper(single_image)
-            rotated_image = F.rotate(single_image, angle, self.interpolation,
-                                     self.expand, self.center, fill)
+            rotated_image = self.rotate_single_image(single_image, angle)
             out_list.append(rotated_image)
         return out_list
+
+    def __init__(self, interpolation=F.InterpolationMode.NEAREST, expand=False, center=None, fill=0):
+        super().__init__(degrees=0, interpolation=interpolation, expand=expand, center=center, fill=fill)
 
 
 class SynchronizedHorizontalFlip(tvf.RandomHorizontalFlip):
