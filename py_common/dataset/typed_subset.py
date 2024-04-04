@@ -15,6 +15,10 @@ class TypedSubset(AbstractDataset, CachedDataset):
     _indices: List | np.ndarray
     subset: AbstractDataset | Subset
 
+    @property
+    def dataset(self):
+        return self._dataset
+
     def __len__(self):
         return len(self.subset)
 

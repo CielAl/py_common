@@ -1,7 +1,7 @@
 import h5py
 from contextlib import contextmanager
 from .parser import H5ParserCore
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 
 class H5Reader:
@@ -62,7 +62,7 @@ class H5Reader:
         return h5py.File(self.uri, mode='r', rdcc_nbytes=rdcc_nbytes, rdcc_w0=0.25)
 
     @contextmanager
-    def get_h5root(self, rdcc_nbytes: int = None):
+    def get_h5root(self, rdcc_nbytes: Optional[int] = None) -> h5py.File:
         """Context manager version of getting h5py.File handle. Release the handle upon exit.
 
         This is useful when your use case need better management of file handles: e.g., only use the reader but without

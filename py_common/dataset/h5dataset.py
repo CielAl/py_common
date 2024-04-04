@@ -45,9 +45,23 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
     _filenames: np.ndarray
     _raw_labels: np.ndarray
 
+    @classmethod
+    def str_decode(cls, s, code='utf-8') -> str | np.ndarray:
+        if isinstance(s, str):
+            return s
+        if isinstance(s, (List, np.ndarray)):
+            return np.asarray([cls.str_decode(x) for x in s])
+        if isinstance(s, bytes):
+            return s.decode(code)
+        return s
+
     @property
     def h5reader(self):
         return self._h5reader
+
+    @property
+    def rdcc_nbytes(self):
+        return self._rdcc_nbytes
 
     def __len__(self):
         return len(self.h5reader)
@@ -60,7 +74,7 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         """
         # {self._uri: self.h5reader.new_h5()}
         os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
-        return {self._uri: self.h5reader.new_h5(self._rdcc_nbytes)}
+        return {self._uri: self.h5reader.new_h5(self.rdcc_nbytes)}
 
     def init_cache(self):
         """
