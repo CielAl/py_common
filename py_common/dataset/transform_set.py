@@ -28,6 +28,18 @@ class TransformSet(AbstractDataset, CachedDataset):
     def new_cache(self):
         return self._dataset.new_cache()
 
+    def init_cache(self, cache: Optional[Dict] = None):
+        """
+        Invoke to initialize the _cache field in worker_init_fn or in factory methods depending on whether there
+        are multiple workers.
+
+        Returns:
+
+        """
+
+        self._cache = self.new_cache() if cache is None else cache
+        self._dataset.init_cache(self._cache)
+
     def __init__(self, dataset: AbstractDataset, transforms: Optional[Callable] = None,
                  keep_original: bool = False,
                  copy_flag: bool = False,

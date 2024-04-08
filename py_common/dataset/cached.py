@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import runtime_checkable, Protocol, Dict
+from typing import runtime_checkable, Protocol, Dict, Optional
 from torch.utils.data import Dataset, get_worker_info, DataLoader
 from py_common.loggers.global_logger import GlobalLoggers
 import logging
@@ -64,7 +64,7 @@ class CachedDataset(Dataset, Cached):
         self.clear_cache()
 
     def clear_cache(self):
-        if hasattr(self, '_cache') and isinstance(self._cache, Dict):
+        if hasattr(self, '_cache') and isinstance(self._cache, dict):
             self._cache.clear()
 
     @abstractmethod
@@ -91,7 +91,7 @@ class CachedDataset(Dataset, Cached):
     #     assert CACHE_MANAGER[self] is not None and isinstance(CACHE_MANAGER[self], Dict)
     #     return CACHE_MANAGER[self]
 
-    def init_cache(self):
+    def init_cache(self, cache: Optional[Dict] = None):
         """
         Invoke to initialize the _cache field in worker_init_fn or in factory methods depending on whether there
         are multiple workers.
@@ -100,7 +100,7 @@ class CachedDataset(Dataset, Cached):
 
         """
 
-        self._cache = self.new_cache()
+        self._cache = self.new_cache() if cache is None else cache
 
     def is_cached(self, key: str):
         """
@@ -155,3 +155,9 @@ class CachedDataset(Dataset, Cached):
         if num_workers == 0:
             dataset.init_cache()
         return DataLoader(dataset, worker_init_fn=init_func, num_workers=num_workers, **kwargs)
+
+    @property
+    def cache(self):
+        if hasattr(self, '_cache'):
+            return self._cache
+        return None

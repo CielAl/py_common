@@ -15,7 +15,7 @@ import multiprocessing as mp
 class Buffer(Protocol):
     _tile_buffer: Dict[str, Union[np.ndarray, Tuple[np.ndarray, ...]]]
     _buffer_size: int
-    manager: mp.Manager
+    # manager: mp.Manager
 
     def clear_buffer(self):
         """Empty the buffer.
@@ -39,7 +39,7 @@ class Buffer(Protocol):
         Returns:
 
         """
-        self.manager = mp.Manager()
+        # self.manager = mp.Manager()
         self._tile_buffer = dict()
         self._buffer_size = buffer_size
 

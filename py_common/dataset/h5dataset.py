@@ -1,6 +1,8 @@
 """
 Wrapper import from existing HDF5 code --> need to revise for adaption of BaseDataset wrapper
 """
+import h5py
+
 # temp wrapper --> may need to migrate later
 # note --> need to regenerate the h5files
 # from h5data.dataset import H5Dataset as LegacyH5Dataset
@@ -76,7 +78,7 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
         return {self._uri: self.h5reader.new_h5(self.rdcc_nbytes)}
 
-    def init_cache(self):
+    def init_cache(self, cache: Optional[Dict] = None):
         """
         Invoke to initialize the _cache field in worker_init_fn or in factory methods depending on whether there
         are multiple workers.
@@ -85,7 +87,7 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
 
         """
 
-        self._cache = self.new_cache()
+        self._cache = self.new_cache() if cache is None else cache
 
     def __init__(self, uri: str, reader: H5Reader, rdcc_nbytes: Optional[int] = None, label_map: Dict = None,
                  buffer_ratio: float = 1):
@@ -171,6 +173,10 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         with self.h5reader.get_h5root() as root:
             return self.h5reader.get_item_helper(root, index)
 
+    @property
+    def uri(self):
+        return self._uri
+
     @staticmethod
     def default_field_value(data: Dict, field: str, default_value):
         return data[field] if field in data else default_value
@@ -218,4 +224,5 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
         """
         if hasattr(self, '_cache'):
             for k, v in self._cache.items():
+                v: h5py.File
                 v.close()

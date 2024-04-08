@@ -1,7 +1,7 @@
 import numpy as np
 
 from .data_class import ModelInput
-from typing import List, Dict
+from typing import List, Dict, Optional
 from .base import AbstractDataset
 from .cached import CachedDataset
 from torch.utils.data import Subset
@@ -24,6 +24,10 @@ class TypedSubset(AbstractDataset, CachedDataset):
 
     def new_cache(self):
         return self._dataset.new_cache()
+
+    def init_cache(self, cache: Optional[Dict] = None):
+        self._cache = self.dataset.init_cache(cache)
+        self.dataset._cache = self._cache
 
     def __init__(self, dataset: AbstractDataset, indices: List | np.ndarray):
         """
