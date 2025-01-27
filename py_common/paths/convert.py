@@ -3,6 +3,7 @@
 """
 import os
 import platform
+from typing import Optional
 
 
 def windows_to_linux(win_path: str, prefix: str = "/mnt") -> str:
@@ -20,7 +21,9 @@ def linux_to_windows(linux_path: str) -> str:
     return win_path
 
 
-def convert_path(path: str) -> str:
+def convert_path(path: Optional[str]) -> Optional[str]:
+    if path is None or path == "":
+        return path
     current_os = platform.system()
 
     # If we're on Linux
