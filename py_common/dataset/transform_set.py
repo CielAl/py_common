@@ -1,5 +1,5 @@
 from .data_class import ModelInput, TYPE_MODEL_INPUT
-from typing import Callable, Union, Optional, Dict
+from typing import Callable, Union, Optional, Dict, Mapping
 from .base import AbstractDataset
 from .cached import CachedDataset
 from copy import deepcopy
@@ -76,7 +76,7 @@ class TransformSet(AbstractDataset, CachedDataset):
                           *exclude_keys: str):
         if misc_transforms_dict is None:
             return misc_transforms_dict
-        assert isinstance(misc_transforms_dict, Dict), f"{type(misc_transforms_dict)}"
+        assert isinstance(misc_transforms_dict, Mapping), f"{type(misc_transforms_dict)}"
         for exclude in exclude_keys:
             assert exclude not in misc_transforms_dict, f"{exclude}"
         return misc_transforms_dict

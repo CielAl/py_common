@@ -35,9 +35,9 @@ class ModelOutput(TypedDict):
     logits: output layer responses.
     ground_truth: corresponding true value.
     """
-    loss: torch.Tensor
-    logits: torch.Tensor
-    ground_truth: torch.Tensor
+    loss: torch.Tensor | float
+    logits: torch.Tensor | float
+    ground_truth: torch.Tensor | float
     meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
     filename: str
 

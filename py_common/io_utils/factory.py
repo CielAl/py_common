@@ -1,11 +1,13 @@
 from .json import write_json, load_json
 from .pickle import write_pickle, load_pickle
+from .yaml import load_yaml
 from typing import Literal, Callable
 
 TYPE_JSON = Literal['json']
 TYPE_PICKLE = Literal['pickle']
+TYPE_YAML = Literal['yaml']
 
-TYPE_SUPPORTED = Literal[TYPE_PICKLE, TYPE_JSON]
+TYPE_SUPPORTED = Literal[TYPE_PICKLE, TYPE_JSON, TYPE_YAML]
 
 
 def _loader(method: TYPE_SUPPORTED) -> Callable:
@@ -14,6 +16,8 @@ def _loader(method: TYPE_SUPPORTED) -> Callable:
             return load_json
         case 'pickle':
             return load_pickle
+        case 'yaml':
+            return load_yaml
         case _:
             raise ValueError(f"Unsupported {method}")
 
