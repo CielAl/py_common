@@ -8,7 +8,7 @@ from PIL.Image import Image
 
 TYPE_IMG_ARRAY = Union[np.ndarray, torch.Tensor, Image]
 
-TYPE_MODEL_INPUT = Literal['data', 'original', 'filename', 'meta', 'ground_truth']
+TYPE_MODEL_INPUT = Literal['data', 'original', 'filename', 'meta', 'ground_truth', 'mask']
 
 
 class ModelInput(TypedDict):
@@ -24,6 +24,7 @@ class ModelInput(TypedDict):
     filename: str | List
     meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY], Dict]
     ground_truth: Union[int, float, np.ndarray, torch.Tensor]
+    mask: Union[int, float, np.ndarray, torch.Tensor]
 
 
 assert set(get_args(TYPE_MODEL_INPUT)) == ModelInput.__annotations__.keys()
