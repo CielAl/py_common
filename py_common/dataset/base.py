@@ -78,3 +78,6 @@ class AbstractDataset(CachedDataset, ABC):
 
         """
         raise NotImplementedError
+
+    def get_all_uri(self):
+        raise NotImplementedError()

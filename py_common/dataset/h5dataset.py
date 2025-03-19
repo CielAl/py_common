@@ -226,3 +226,9 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
             for k, v in self._cache.items():
                 v: h5py.File
                 v.close()
+
+    def get_all_uri(self):
+        with self.h5reader.get_h5root() as root:
+            all_filenames = root['filename'][:].tolist()
+            all_filenames = [x.decode("utf-8") if isinstance(x, bytes) else str(x) for x in all_filenames]
+            return all_filenames
