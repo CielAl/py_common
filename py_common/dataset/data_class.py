@@ -5,7 +5,7 @@ from typing import TypedDict, Union, List, Dict, Literal, get_args
 import torch
 import numpy as np
 from PIL.Image import Image
-
+from typing_extensions import NotRequired
 TYPE_IMG_ARRAY = Union[np.ndarray, torch.Tensor, Image]
 
 TYPE_MODEL_INPUT = Literal['data', 'original', 'filename', 'meta', 'ground_truth', 'mask']
@@ -39,9 +39,13 @@ class ModelOutput(TypedDict):
     loss: torch.Tensor | float
     logits: torch.Tensor | float
     ground_truth: torch.Tensor | float
+    logits_misc: NotRequired[torch.Tensor | float]
+    ground_truth_misc: NotRequired[torch.Tensor | float]
     meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
     filename: str
+    misc: NotRequired[Dict]
 
 
-TYPE_MODEL_OUTPUT = Literal['loss', 'logits', 'ground_truth', 'meta', 'filename']
+TYPE_MODEL_OUTPUT = Literal['loss', 'logits', 'ground_truth', 'meta', 'filename',
+'misc', 'ground_truth_misc', 'logits_misc']
 assert set(get_args(TYPE_MODEL_OUTPUT)) == ModelOutput.__annotations__.keys()
