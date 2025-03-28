@@ -227,8 +227,12 @@ class CachedH5Dataset(AbstractDataset, CachedDataset, BufferedDataset):
                 v: h5py.File
                 v.close()
 
+    # todo - merge with self._filenames
     def get_all_uri(self):
         with self.h5reader.get_h5root() as root:
             all_filenames = root['filename'][:].tolist()
             all_filenames = [x.decode("utf-8") if isinstance(x, bytes) else str(x) for x in all_filenames]
             return all_filenames
+
+    def get_all_label(self):
+        return self._raw_labels

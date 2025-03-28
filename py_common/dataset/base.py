@@ -81,3 +81,6 @@ class AbstractDataset(CachedDataset, ABC):
 
     def get_all_uri(self):
         raise NotImplementedError()
+
+    def get_all_label(self):
+        raise NotImplementedError()
