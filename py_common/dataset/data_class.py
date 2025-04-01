@@ -44,6 +44,7 @@ class ModelOutput(TypedDict):
     meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
     filename: str
     misc: NotRequired[Dict]
+    loss_list: NotRequired[List[float | torch.Tensor]]
 
 
 TYPE_MODEL_OUTPUT = Literal['loss', 'logits', 'ground_truth', 'meta', 'filename',
