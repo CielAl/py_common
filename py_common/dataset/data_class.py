@@ -48,5 +48,5 @@ class ModelOutput(TypedDict):
 
 
 TYPE_MODEL_OUTPUT = Literal['loss', 'logits', 'ground_truth', 'meta', 'filename',
-'misc', 'ground_truth_misc', 'logits_misc']
+'misc', 'ground_truth_misc', 'logits_misc', 'loss_list']
 assert set(get_args(TYPE_MODEL_OUTPUT)) == ModelOutput.__annotations__.keys()
