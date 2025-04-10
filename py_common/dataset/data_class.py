@@ -30,6 +30,8 @@ class ModelInput(TypedDict):
 assert set(get_args(TYPE_MODEL_INPUT)) == ModelInput.__annotations__.keys()
 
 
+LossDict = Dict[str, float | torch.Tensor]
+
 class ModelOutput(TypedDict):
     """
     Loss: output of loss function if available.
@@ -44,9 +46,9 @@ class ModelOutput(TypedDict):
     meta:  Union[float, int, TYPE_IMG_ARRAY, List[TYPE_IMG_ARRAY]]
     filename: str
     misc: NotRequired[Dict]
-    loss_list: NotRequired[List[float | torch.Tensor]]
+    loss_dict: NotRequired[LossDict]
 
 
 TYPE_MODEL_OUTPUT = Literal['loss', 'logits', 'ground_truth', 'meta', 'filename',
-'misc', 'ground_truth_misc', 'logits_misc', 'loss_list']
+'misc', 'ground_truth_misc', 'logits_misc', 'loss_dict']
 assert set(get_args(TYPE_MODEL_OUTPUT)) == ModelOutput.__annotations__.keys()
